@@ -5,7 +5,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index() // Tambahkan index untuk performa query lebih cepat
+  @Index() 
   @Column({ unique: true })
   telegramId: string;
 
@@ -27,6 +27,6 @@ export class User {
   createdAt: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  referrerId: string; // Telegram ID dari yang mengundang
+  referrerId: string;
   lastClaimed: Date;
 }

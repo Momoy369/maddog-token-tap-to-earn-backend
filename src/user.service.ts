@@ -12,7 +12,7 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
     if (!user) return null;
 
-    user.balance += 10; // Reward per tap
+    user.balance += 1;
     await this.userRepo.save(user);
     return user;
   }
@@ -21,7 +21,6 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
     if (!user || user.balance < 1000) return null;
 
-    // Cek cooldown withdraw
     const now = moment().utc();
     const lastWithdraw = moment(user.lastWithdraw || 0);
     if (lastWithdraw.isValid() && now.diff(lastWithdraw, 'hours') < 24) {
@@ -29,7 +28,7 @@ export class UserService {
     }
 
     user.balance -= 1000;
-    user.lastWithdraw = now.toDate(); // Simpan waktu terakhir withdraw
+    user.lastWithdraw = now.toDate();
     await this.userRepo.save(user);
 
     return user;
@@ -38,7 +37,7 @@ export class UserService {
   async getLeaderboard() {
     return await this.userRepo.find({
       order: { balance: 'DESC' },
-      take: 10, // Ambil 10 user dengan saldo tertinggi
+      take: 10,
     });
   }
 
@@ -49,9 +48,9 @@ export class UserService {
     const now = moment().utc();
     const lastClaim = moment(user.lastClaimed || 0);
 
-    if (lastClaim.isSame(now, 'day')) return null; // Hanya 1x sehari
+    if (lastClaim.isSame(now, 'day')) return null;
 
-    user.balance += 100;
+    user.balance += 20;
     user.lastClaimed = now.toDate();
     await this.userRepo.save(user);
     return user;
@@ -68,7 +67,7 @@ export class UserService {
           where: { telegramId: referrerId },
         });
         if (referrer) {
-          referrer.balance += 50; // Bonus untuk referrer
+          referrer.balance += 35;
           await this.userRepo.save(referrer);
         }
       }

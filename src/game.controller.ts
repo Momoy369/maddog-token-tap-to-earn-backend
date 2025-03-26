@@ -41,13 +41,11 @@ export class GameController {
     return { balance: user.balance, reward: validTaps * rewardPerTap };
   }
 
-  // Metode simulasi untuk mendapatkan user
   private async getUserByTelegramId(telegramId: string): Promise<User> {
     return { id: telegramId, balance: 100, lastTapTime: null };
   }
 
-  // Metode simulasi untuk memperbarui user
   private async updateUser(user: any) {
-    return user; // Simulasi update user
+    return user;
   }
 }
