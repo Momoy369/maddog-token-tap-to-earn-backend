@@ -4,9 +4,9 @@ import { sendSolanaToken } from './sendToken.js';
 const app = express();
 app.use(express.json());
 
-const MINIMUM_POINTS = 500; // Contoh batas minimum
+const MINIMUM_POINTS = 500;
 
-const COOLDOWN_HOURS = 24; // Waktu cooldown dalam jam
+const COOLDOWN_HOURS = 24;
 
 app.post('/api/claim-token', async (req, res) => {
   const { wallet, points } = req.body;
@@ -15,14 +15,12 @@ app.post('/api/claim-token', async (req, res) => {
     return res.status(400).json({ error: 'Wallet dan poin harus diisi!' });
   }
 
-  // Cek apakah poin memenuhi syarat withdraw
   if (points < MINIMUM_POINTS) {
     return res
       .status(400)
       .json({ error: `Minimum withdraw adalah ${MINIMUM_POINTS} poin!` });
   }
 
-  // Cek cooldown
   const user = await getUser(wallet);
   if (user?.lastWithdraw) {
     const lastWithdrawTime = new Date(user.lastWithdraw);
@@ -40,7 +38,6 @@ app.post('/api/claim-token', async (req, res) => {
     const tokenAmount = points / 100;
     const txHash = await sendSolanaToken(wallet, tokenAmount);
 
-    // Perbarui waktu withdraw terakhir
     await updateUserWithdrawTime(wallet);
 
     return res.json({ success: true, txHash });
@@ -51,5 +48,5 @@ app.post('/api/claim-token', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
-  console.log(`🚀 Server berjalan di http://localhost:${PORT}`),
+  console.log(`🚀 Server berjalan di https://maddog-token.site:${PORT}`),
 );
