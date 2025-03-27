@@ -10,7 +10,7 @@ export class User {
   telegramId: string;
 
   @Index()
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: false })
   wallet: string;
 
   @Column({ default: 0 })
