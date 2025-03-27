@@ -19,7 +19,7 @@ export class UserService {
 
   async withdraw(telegramId: string, walletAddress: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user || user.balance < 1000) return null;
+    if (!user || user.balance < 50000) return null;
 
     const now = moment().utc();
     const lastWithdraw = moment(user.lastWithdraw || 0);
@@ -64,9 +64,10 @@ export class UserService {
         telegramId,
         balance: 100,
         wallet: `TEMP_${telegramId}`,
+        referrerId, // Simpan referral jika ada
       });
+
       if (referrerId) {
-        user.referrerId = referrerId;
         const referrer = await this.userRepo.findOne({
           where: { telegramId: referrerId },
         });
@@ -77,6 +78,11 @@ export class UserService {
       }
       await this.userRepo.save(user);
     }
-    return user;
+
+    return {
+      telegramId: user.telegramId,
+      balance: user.balance,
+      referralCode: user.telegramId, // Kirim referralCode ke frontend
+    };
   }
 }
