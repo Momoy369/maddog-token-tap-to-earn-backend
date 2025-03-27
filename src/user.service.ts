@@ -60,7 +60,11 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
 
     if (!user) {
-      user = this.userRepo.create({ telegramId, balance: 100, wallet: '' });
+      user = this.userRepo.create({
+        telegramId,
+        balance: 100,
+        wallet: `TEMP_${telegramId}`,
+      });
       if (referrerId) {
         user.referrerId = referrerId;
         const referrer = await this.userRepo.findOne({
