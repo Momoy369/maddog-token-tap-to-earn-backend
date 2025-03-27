@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { UserModule } from './user.module'; // <-- Tambahkan ini!
+import { UserModule } from './user.module';
 
 @Module({
   imports: [
@@ -12,7 +12,7 @@ import { UserModule } from './user.module'; // <-- Tambahkan ini!
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UserModule, // <-- Tambahkan ini!
+    UserModule,
   ],
 })
 export class AppModule {}

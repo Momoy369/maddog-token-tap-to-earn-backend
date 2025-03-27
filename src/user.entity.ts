@@ -27,8 +27,8 @@ export class User {
   createdAt: Date;
 
   @Column({ nullable: true })
-  referrerId: string; // Tambahkan @Column
+  referrerId: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastClaimed: Date; // Tambahkan @Column
+  lastClaimed: Date;
 }
