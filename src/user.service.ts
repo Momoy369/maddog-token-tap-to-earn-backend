@@ -19,7 +19,8 @@ export class UserService {
 
   async withdraw(telegramId: string, walletAddress: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user || user.balance < 1000) return null;
+    if (!user) return { error: 'User tidak ditemukan!' };
+    if (user.balance < 1000) return { error: 'Saldo tidak cukup!' };
 
     const now = moment().utc();
     const lastWithdraw = moment(user.lastWithdraw || 0);
@@ -31,7 +32,7 @@ export class UserService {
     user.lastWithdraw = now.toDate();
     await this.userRepo.save(user);
 
-    return user;
+    return { success: 'Withdraw berhasil!', balance: user.balance };
   }
 
   async getLeaderboard() {
@@ -43,17 +44,19 @@ export class UserService {
 
   async claimDailyReward(telegramId: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user) return null;
+    if (!user) return { error: 'User tidak ditemukan!' };
 
     const now = moment().utc();
     const lastClaim = moment(user.lastClaimed || 0);
 
-    if (lastClaim.isSame(now, 'day')) return null;
+    if (lastClaim.isValid() && lastClaim.isSame(now, 'day')) {
+      return { error: 'Anda sudah klaim hari ini!' };
+    }
 
     user.balance += 20;
     user.lastClaimed = now.toDate();
     await this.userRepo.save(user);
-    return user;
+    return { success: 'Klaim berhasil!', balance: user.balance };
   }
 
   async register(telegramId: string, referrerId?: string) {
@@ -64,19 +67,29 @@ export class UserService {
         telegramId,
         balance: 100,
         wallet: `TEMP_${telegramId}`,
+        referralCode: `REF-${telegramId}`,
       });
+
       if (referrerId) {
-        user.referrerId = referrerId;
         const referrer = await this.userRepo.findOne({
           where: { telegramId: referrerId },
         });
         if (referrer) {
           referrer.balance += 35;
           await this.userRepo.save(referrer);
+          user.referrerId = referrerId;
         }
       }
+
       await this.userRepo.save(user);
     }
-    return user;
+
+    return {
+      telegramId: user.telegramId,
+      balance: user.balance,
+      referralCode: user.referralCode,
+      lastWithdraw: user.lastWithdraw,
+      lastClaimed: user.lastClaimed,
+    };
   }
 }

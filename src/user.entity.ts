@@ -31,4 +31,7 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true })
   lastClaimed: Date;
+
+  @Column({ nullable: true })
+  referralCode: string;
 }
