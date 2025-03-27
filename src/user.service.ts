@@ -58,7 +58,7 @@ export class UserService {
       return { error: 'Anda sudah klaim hari ini!' };
     }
 
-    user.balance += 20;
+    user.balance += 200;
     user.lastClaimed = now.toDate();
     await this.userRepo.save(user);
     return { success: 'Klaim berhasil!', balance: user.balance };
