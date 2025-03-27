@@ -5,7 +5,7 @@ import { pool } from './database.js';
 const router = express.Router();
 const SECRET_KEY = '8147895010:AAFae3317MytJ7yjdq9LNAljip5ohekzEIw';
 
-router.post('/auth', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { initData } = req.body;
 
   try {
