@@ -19,11 +19,13 @@ export class UserService {
 
   async withdraw(telegramId: string, walletAddress: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user) return { error: 'User tidak ditemukan!' };
-    if (user.balance < 1000) return { error: 'Saldo tidak cukup!' };
+    if (!user || user.balance < 1000) {
+      return { error: 'Saldo tidak cukup untuk withdraw.' };
+    }
 
     const now = moment().utc();
     const lastWithdraw = moment(user.lastWithdraw || 0);
+
     if (lastWithdraw.isValid() && now.diff(lastWithdraw, 'hours') < 24) {
       return { error: 'Tunggu 24 jam sebelum withdraw berikutnya!' };
     }
@@ -32,7 +34,10 @@ export class UserService {
     user.lastWithdraw = now.toDate();
     await this.userRepo.save(user);
 
-    return { success: 'Withdraw berhasil!', balance: user.balance };
+    return {
+      balance: user.balance,
+      lastWithdraw: user.lastWithdraw,
+    };
   }
 
   async getLeaderboard() {
@@ -63,33 +68,34 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
 
     if (!user) {
-      user = this.userRepo.create({
-        telegramId,
-        balance: 100,
-        wallet: `TEMP_${telegramId}`,
-        referralCode: `REF-${telegramId}`,
-      });
+      user = new User(); // <--- Gunakan cara ini jika error tetap ada
+      user.telegramId = telegramId;
+      user.balance = 100;
+      user.wallet = `TEMP_${telegramId}`;
+      user.referralCode = `REF-${telegramId}`;
+      user.lastWithdraw = null;
+      user.lastClaimed = null;
+      user.referrerId = referrerId || '';
+
+      await this.userRepo.save(user);
 
       if (referrerId) {
         const referrer = await this.userRepo.findOne({
           where: { telegramId: referrerId },
         });
         if (referrer) {
-          referrer.balance += 35;
+          referrer.balance += 35; // Bonus referral
           await this.userRepo.save(referrer);
-          user.referrerId = referrerId;
         }
       }
-
-      await this.userRepo.save(user);
     }
 
     return {
       telegramId: user.telegramId,
       balance: user.balance,
       referralCode: user.referralCode,
-      lastWithdraw: user.lastWithdraw,
-      lastClaimed: user.lastClaimed,
+      lastWithdraw: user.lastWithdraw || null,
+      lastClaimed: user.lastClaimed || null,
     };
   }
 }
