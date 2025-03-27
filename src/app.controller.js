@@ -8,7 +8,7 @@ const MINIMUM_POINTS = 500;
 
 const COOLDOWN_HOURS = 24;
 
-app.post('/api/claim-token', async (req, res) => {
+app.post('/user/claim-token', async (req, res) => {
   const { wallet, points } = req.body;
 
   if (!wallet || !points) {
