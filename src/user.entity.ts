@@ -5,7 +5,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index() 
+  @Index()
   @Column({ unique: true })
   telegramId: string;
 
@@ -26,7 +26,9 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
+  @Column({ nullable: true })
+  referrerId: string; // Tambahkan @Column
+
   @Column({ type: 'timestamp', nullable: true })
-  referrerId: string;
-  lastClaimed: Date;
+  lastClaimed: Date; // Tambahkan @Column
 }
