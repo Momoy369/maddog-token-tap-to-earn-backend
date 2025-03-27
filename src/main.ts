@@ -6,7 +6,7 @@ async function bootstrap() {
 
   // Aktifkan CORS
   app.enableCors({
-    origin: 'https://maddog-token.site',
+    origin: 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
