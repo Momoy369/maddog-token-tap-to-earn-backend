@@ -5,6 +5,11 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Post('register')
+  async register(@Body('telegramId') telegramId: string) {
+    return await this.userService.register(telegramId);
+  }
+
   @Post('tap')
   async tap(@Body('telegramId') telegramId: string) {
     return await this.userService.tap(telegramId);
