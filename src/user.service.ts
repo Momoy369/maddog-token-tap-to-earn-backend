@@ -79,14 +79,16 @@ export class UserService {
     user.telegramId = telegramId;
     user.balance = 100;
     user.wallet = `TEMP_${telegramId}`;
-    user.referrerId = referrerId || undefined;
-    user.lastWithdraw = undefined;
-    user.lastClaimed = undefined;
+    user.referrerId = referrerId || null; // Gunakan null, bukan undefined
+    user.lastWithdraw = null; // Gunakan null, bukan undefined
+    user.lastClaimed = null; // Gunakan null, bukan undefined
 
     if (referrerId) {
-      const referrer = await this.userRepo.findOne({ where: { telegramId: referrerId } });
+      const referrer = await this.userRepo.findOne({
+        where: { telegramId: referrerId },
+      });
       if (referrer) {
-        referrer.balance += 35;
+        referrer.balance = (referrer.balance ?? 0) + 35; // Pastikan balance bukan null
         await this.userRepo.save(referrer);
       }
     }
