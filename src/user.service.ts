@@ -19,7 +19,11 @@ export class UserService {
 
   async withdraw(telegramId: string, walletAddress: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user || user.balance < 50000) return null;
+    if (!user) return { error: 'User tidak ditemukan!' };
+
+    if (user.balance < 50000) {
+      return { error: 'Minimal withdraw adalah 50.000 poin!' };
+    }
 
     const now = moment().utc();
     const lastWithdraw = moment(user.lastWithdraw || 0);
@@ -27,11 +31,15 @@ export class UserService {
       return { error: 'Tunggu 24 jam sebelum withdraw berikutnya!' };
     }
 
-    user.balance -= 1000;
+    user.balance -= 50000;
     user.lastWithdraw = now.toDate();
     await this.userRepo.save(user);
 
-    return user;
+    return {
+      message: 'Withdraw berhasil!',
+      newBalance: user.balance,
+      lastWithdraw: user.lastWithdraw,
+    };
   }
 
   async getLeaderboard() {
@@ -43,46 +51,56 @@ export class UserService {
 
   async claimDailyReward(telegramId: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user) return null;
+    if (!user) return { error: 'User tidak ditemukan!' };
 
     const now = moment().utc();
     const lastClaim = moment(user.lastClaimed || 0);
 
-    if (lastClaim.isSame(now, 'day')) return null;
+    if (lastClaim.isValid() && lastClaim.isSame(now, 'day')) {
+      return { error: 'Daily reward sudah diklaim hari ini!' };
+    }
 
     user.balance += 20;
     user.lastClaimed = now.toDate();
     await this.userRepo.save(user);
-    return user;
+
+    return {
+      message: 'Daily reward berhasil diklaim!',
+      newBalance: user.balance,
+      lastClaimed: user.lastClaimed,
+    };
   }
 
   async register(telegramId: string, referrerId?: string) {
-    let user = await this.userRepo.findOne({ where: { telegramId } });
+  let user = await this.userRepo.findOne({ where: { telegramId } });
 
-    if (!user) {
-      user = this.userRepo.create({
-        telegramId,
-        balance: 100,
-        wallet: `TEMP_${telegramId}`,
-        referrerId, // Simpan referral jika ada
-      });
+  if (!user) {
+    user = new User();
+    user.telegramId = telegramId;
+    user.balance = 100;
+    user.wallet = `TEMP_${telegramId}`;
+    user.referrerId = referrerId || undefined;
+    user.lastWithdraw = undefined;
+    user.lastClaimed = undefined;
 
-      if (referrerId) {
-        const referrer = await this.userRepo.findOne({
-          where: { telegramId: referrerId },
-        });
-        if (referrer) {
-          referrer.balance += 35;
-          await this.userRepo.save(referrer);
-        }
+    if (referrerId) {
+      const referrer = await this.userRepo.findOne({ where: { telegramId: referrerId } });
+      if (referrer) {
+        referrer.balance += 35;
+        await this.userRepo.save(referrer);
       }
-      await this.userRepo.save(user);
     }
-
-    return {
-      telegramId: user.telegramId,
-      balance: user.balance,
-      referralCode: user.telegramId, // Kirim referralCode ke frontend
-    };
+    await this.userRepo.save(user);
   }
+
+  return {
+    telegramId: user.telegramId,
+    balance: user.balance,
+    wallet: user.wallet,
+    referralCode: user.telegramId,
+    lastWithdraw: user.lastWithdraw,
+    lastClaimed: user.lastClaimed,
+  };
+}
+
 }

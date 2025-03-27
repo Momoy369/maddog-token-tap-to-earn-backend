@@ -17,18 +17,19 @@ export class User {
   balance: number;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastTapTime: Date;
+  lastTapTime?: Date | null;
 
   @Index()
   @Column({ type: 'timestamp', nullable: true })
-  lastWithdraw: Date;
+  lastWithdraw?: Date | null;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
   @Column({ nullable: true })
-  referrerId: string;
+  referrerId?: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastClaimed: Date;
+  lastClaimed?: Date | null;
 }
+
