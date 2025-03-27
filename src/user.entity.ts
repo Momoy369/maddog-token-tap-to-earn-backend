@@ -10,6 +10,10 @@ export class User {
   telegramId: string;
 
   @Index()
+  @Column({ nullable: true })
+  username: string;
+
+  @Index()
   @Column({ unique: true, nullable: false })
   wallet: string;
 

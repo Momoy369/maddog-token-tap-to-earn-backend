@@ -42,6 +42,7 @@ export class UserService {
 
   async getLeaderboard() {
     return await this.userRepo.find({
+      select: ['telegramId', 'balance', 'username'],
       order: { balance: 'DESC' },
       take: 10,
     });
@@ -68,14 +69,15 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
 
     if (!user) {
-      user = new User(); // <--- Gunakan cara ini jika error tetap ada
-      user.telegramId = telegramId;
-      user.balance = 100;
-      user.wallet = `TEMP_${telegramId}`;
-      user.referralCode = `REF-${telegramId}`;
-      user.lastWithdraw = null;
-      user.lastClaimed = null;
-      user.referrerId = referrerId || '';
+      user = this.userRepo.create({
+        telegramId,
+        balance: 100,
+        wallet: `TEMP_${telegramId}`,
+        referralCode: `REF-${telegramId}`,
+        lastWithdraw: null,
+        lastClaimed: null,
+        referrerId: referrerId || '',
+      });
 
       await this.userRepo.save(user);
 
@@ -84,7 +86,7 @@ export class UserService {
           where: { telegramId: referrerId },
         });
         if (referrer) {
-          referrer.balance += 35; // Bonus referral
+          referrer.balance += 500;
           await this.userRepo.save(referrer);
         }
       }
