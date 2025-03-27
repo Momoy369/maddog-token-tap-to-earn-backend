@@ -19,7 +19,7 @@ export class UserService {
 
   async withdraw(telegramId: string, walletAddress: string) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user || user.balance < 1000) {
+    if (!user || user.balance < 50000) {
       return { error: 'Saldo tidak cukup untuk withdraw.' };
     }
 
@@ -30,7 +30,7 @@ export class UserService {
       return { error: 'Tunggu 24 jam sebelum withdraw berikutnya!' };
     }
 
-    user.balance -= 1000;
+    user.balance -= 50000;
     user.lastWithdraw = now.toDate();
     await this.userRepo.save(user);
 
