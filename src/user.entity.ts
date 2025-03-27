@@ -21,14 +21,14 @@ export class User {
 
   @Index()
   @Column({ type: 'timestamp', nullable: true })
-  lastWithdraw: Date | null;
+  lastWithdraw: Date;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
   @Column({ nullable: true })
-  referrerId: string | null;
+  referrerId: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastClaimed: Date | null;
+  lastClaimed: Date;
 }
