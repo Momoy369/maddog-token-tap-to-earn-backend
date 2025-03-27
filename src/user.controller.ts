@@ -15,6 +15,11 @@ export class UserController {
     return await this.userService.tap(telegramId);
   }
 
+  @Post('claim')
+  async claim(@Body('telegramId') telegramId: string) {
+    return await this.userService.claimDailyReward(telegramId);
+  }
+
   @Post('withdraw')
   async withdraw(
     @Body('telegramId') telegramId: string,

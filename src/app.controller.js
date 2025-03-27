@@ -4,7 +4,7 @@ import { sendSolanaToken } from './sendToken.js';
 const app = express();
 app.use(express.json());
 
-const MINIMUM_POINTS = 500;
+const MINIMUM_POINTS = 50000;
 
 const COOLDOWN_HOURS = 24;
 
