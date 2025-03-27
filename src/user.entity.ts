@@ -32,4 +32,3 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lastClaimed?: Date | null;
 }
-
