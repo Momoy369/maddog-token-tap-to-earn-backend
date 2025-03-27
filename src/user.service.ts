@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -77,6 +78,7 @@ export class UserService {
         lastWithdraw: null,
         lastClaimed: null,
         referrerId: referrerId || '',
+        hasUsedReferral: false,
       });
 
       await this.userRepo.save(user);
@@ -85,10 +87,49 @@ export class UserService {
         const referrer = await this.userRepo.findOne({
           where: { telegramId: referrerId },
         });
-        if (referrer) {
-          referrer.balance += 500;
-          await this.userRepo.save(referrer);
+
+        if (!referrer) {
+          throw new Error('Referral ID tidak valid');
         }
+
+        if (user.hasUsedReferral) {
+          throw new Error('Anda sudah menggunakan kode referral sebelumnya');
+        }
+
+        referrer.balance += 500;
+        await this.userRepo.save(referrer);
+
+        user.hasUsedReferral = true;
+        await this.userRepo.save(user);
+
+        await this.sendMessageToTelegram(
+          referrer.telegramId,
+          '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
+        );
+      }
+    } else {
+      if (referrerId) {
+        if (user.hasUsedReferral) {
+          throw new Error('Anda sudah menggunakan kode referral sebelumnya');
+        }
+
+        const referrer = await this.userRepo.findOne({
+          where: { telegramId: referrerId },
+        });
+        if (!referrer) {
+          throw new Error('Referral ID tidak valid');
+        }
+
+        referrer.balance += 500;
+        await this.userRepo.save(referrer);
+
+        user.hasUsedReferral = true;
+        await this.userRepo.save(user);
+
+        await this.sendMessageToTelegram(
+          referrer.telegramId,
+          '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
+        );
       }
     }
 
@@ -99,5 +140,11 @@ export class UserService {
       lastWithdraw: user.lastWithdraw || null,
       lastClaimed: user.lastClaimed || null,
     };
+  }
+
+  async sendMessageToTelegram(telegramId: string, message: string) {
+    const botToken = 'YOUR_BOT_TOKEN';
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${telegramId}&text=${encodeURIComponent(message)}`;
+    await axios.get(url);
   }
 }

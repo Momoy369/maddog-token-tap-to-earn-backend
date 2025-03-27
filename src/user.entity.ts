@@ -38,4 +38,7 @@ export class User {
 
   @Column({ nullable: true })
   referralCode: string;
+
+  @Column({ default: false })
+  hasUsedReferral: boolean;
 }
