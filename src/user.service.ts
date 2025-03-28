@@ -23,9 +23,12 @@ dotenv.config();
 
 @Injectable()
 export class UserService {
-  private CONVERSION_RATIO = 0.0001; // 1 meme coin = 0.0001 SPL token
   private SPL_TOKEN_MINT_ADDRESS =
     'mntv2Hgsa3D8KhjPmQbCTefph17cJMuW4ZT1cGFg5FH';
+
+  private totalDistributed = 0;
+
+  private MAX_AIRDROP_SUPPLY = 200_000_000 * 0.2;
 
   constructor(@InjectRepository(User) private userRepo: Repository<User>) {}
 
@@ -50,7 +53,7 @@ export class UserService {
     const payer = Keypair.fromSecretKey(new Uint8Array(privateKeyArray));
 
     let user = await this.userRepo.findOne({ where: { telegramId } });
-    if (!user || user.balance < 50000) {
+    if (!user || user.balance < 1_000_000) {
       return { error: 'Saldo tidak cukup untuk withdraw.' };
     }
 
@@ -61,16 +64,19 @@ export class UserService {
       return { error: 'Tunggu 24 jam sebelum withdraw berikutnya!' };
     }
 
-    const splAmount = this.convertMemeCoinToSpl(user.balance);
-
-    const solBalance = await this.checkSolBalance(user.wallet);
-    if (solBalance < 0.001) {
-      return { error: 'Saldo SOL tidak cukup untuk biaya transaksi.' };
+    const splAmount = this.convertPointsToSpl(user.balance);
+    if (this.totalDistributed + splAmount > this.MAX_AIRDROP_SUPPLY) {
+      return { error: 'Airdrop limit telah tercapai!' };
     }
 
-    user.balance -= 50000;
-    user.lastWithdraw = now.toDate();
-    await this.userRepo.save(user);
+    const estimatedFee = await this.estimateTransactionFee();
+    const solBalance = await this.checkSolBalance(walletAddress);
+
+    if (solBalance < estimatedFee) {
+      return {
+        error: `Saldo SOL tidak cukup untuk biaya transaksi! Dibutuhkan sekitar ${estimatedFee} SOL.`,
+      };
+    }
 
     try {
       const transactionResult = await this.sendSplTokenToUser(
@@ -78,9 +84,14 @@ export class UserService {
         splAmount,
         payer,
       );
+
+      user.balance = 0;
+      user.lastWithdraw = now.toDate();
+      this.totalDistributed += splAmount;
+      await this.userRepo.save(user);
+
       return {
         success: 'Withdraw berhasil!',
-        balance: user.balance,
         transactionId: transactionResult.transactionId,
       };
     } catch (error) {
@@ -89,8 +100,23 @@ export class UserService {
     }
   }
 
-  private convertMemeCoinToSpl(memeCoinAmount: number): number {
-    return memeCoinAmount * this.CONVERSION_RATIO;
+  private async estimateTransactionFee(): Promise<number> {
+    const connection = new Connection(
+      clusterApiUrl('mainnet-beta'),
+      'confirmed',
+    );
+    const transaction = new Transaction();
+    const feeInfo = await connection.getFeeForMessage(
+      transaction.compileMessage(),
+    );
+
+    const feeLamports = feeInfo.value ?? 5000;
+
+    return feeLamports / 10 ** 9;
+  }
+
+  private convertPointsToSpl(points: number): number {
+    return points / 100_000;
   }
 
   private async checkSolBalance(walletAddress: string): Promise<number> {
@@ -124,9 +150,9 @@ export class UserService {
       receiver,
     );
 
-    try {
+    const receiverAccountInfo =
       await connection.getAccountInfo(receiverTokenAccount);
-    } catch (e) {
+    if (!receiverAccountInfo) {
       const transaction = new Transaction().add(
         createAssociatedTokenAccountInstruction(
           payer.publicKey,
@@ -143,7 +169,7 @@ export class UserService {
         payerTokenAccount,
         receiverTokenAccount,
         payer.publicKey,
-        splAmount * 10 ** 9,
+        Math.round(splAmount * 10 ** 9),
         [],
         TOKEN_PROGRAM_ID,
       ),
@@ -192,58 +218,13 @@ export class UserService {
         lastWithdraw: null,
         lastClaimed: null,
         referrerId: referrerId || '',
-        hasUsedReferral: false,
+        hasUsedReferral: referrerId ? true : false, // langsung set jika ada referrer
       });
 
       await this.userRepo.save(user);
 
       if (referrerId) {
-        const referrer = await this.userRepo.findOne({
-          where: { telegramId: referrerId },
-        });
-
-        if (!referrer) {
-          throw new Error('Referral ID tidak valid');
-        }
-
-        if (user.hasUsedReferral) {
-          throw new Error('Anda sudah menggunakan kode referral sebelumnya');
-        }
-
-        referrer.balance += 500;
-        await this.userRepo.save(referrer);
-
-        user.hasUsedReferral = true;
-        await this.userRepo.save(user);
-
-        await this.sendMessageToTelegram(
-          referrer.telegramId,
-          '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
-        );
-      }
-    } else {
-      if (referrerId) {
-        if (user.hasUsedReferral) {
-          throw new Error('Anda sudah menggunakan kode referral sebelumnya');
-        }
-
-        const referrer = await this.userRepo.findOne({
-          where: { telegramId: referrerId },
-        });
-        if (!referrer) {
-          throw new Error('Referral ID tidak valid');
-        }
-
-        referrer.balance += 500;
-        await this.userRepo.save(referrer);
-
-        user.hasUsedReferral = true;
-        await this.userRepo.save(user);
-
-        await this.sendMessageToTelegram(
-          referrer.telegramId,
-          '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
-        );
+        await this.processReferral(referrerId);
       }
     }
 
@@ -256,9 +237,39 @@ export class UserService {
     };
   }
 
+  private async processReferral(referrerId: string) {
+    const referrer = await this.userRepo.findOne({
+      where: { telegramId: referrerId },
+    });
+
+    if (!referrer) {
+      console.error(`Referral ID tidak valid: ${referrerId}`);
+      return;
+    }
+
+    referrer.balance += 500;
+    await this.userRepo.save(referrer);
+
+    try {
+      await this.sendMessageToTelegram(
+        referrer.telegramId,
+        '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
+      );
+    } catch (error) {
+      console.error('Gagal mengirim pesan ke Telegram:', error);
+    }
+  }
+
   async sendMessageToTelegram(telegramId: string, message: string) {
-    const botToken = '8147895010:AAFae3317MytJ7yjdq9LNAljip5ohekzEIw';
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${telegramId}&text=${encodeURIComponent(message)}`;
-    await axios.get(url);
+    try {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (!botToken)
+        throw new Error('Bot token tidak ditemukan di environment variables!');
+
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      await axios.post(url, { chat_id: telegramId, text: message });
+    } catch (error) {
+      console.error('Error saat mengirim pesan Telegram:', error);
+    }
   }
 }
