@@ -36,8 +36,38 @@ export class UserService {
     let user = await this.userRepo.findOne({ where: { telegramId } });
     if (!user) return null;
 
+    user = this.updateUserEnergy(user);
+
+    if (user.energy <= 0) {
+      return { error: 'Energi habis! Tunggu hingga energi terisi kembali.' };
+    }
+
     user.balance += 1;
+    user.energy -= 1;
     await this.userRepo.save(user);
+
+    return {
+      balance: user.balance,
+      energy: user.energy,
+    };
+  }
+
+  private updateUserEnergy(user: User): User {
+    const ENERGY_MAX = 50000;
+    const REFILL_TIME_HOURS = 3;
+
+    const lastUpdate = user.lastEnergyUpdate
+      ? moment(user.lastEnergyUpdate)
+      : moment().subtract(REFILL_TIME_HOURS, 'hours');
+
+    const now = moment();
+    const hoursSinceLastUpdate = now.diff(lastUpdate, 'hours', true);
+
+    if (hoursSinceLastUpdate >= REFILL_TIME_HOURS) {
+      user.energy = ENERGY_MAX;
+    }
+
+    user.lastEnergyUpdate = now.toDate();
     return user;
   }
 

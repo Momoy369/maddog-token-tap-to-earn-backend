@@ -41,4 +41,10 @@ export class User {
 
   @Column({ default: false })
   hasUsedReferral: boolean;
+
+  @Column({ default: 50000 })
+  energy: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastEnergyUpdate: Date;
 }
