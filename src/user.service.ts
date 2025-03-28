@@ -239,7 +239,7 @@ export class UserService {
       return { error: 'Anda sudah klaim hari ini!' };
     }
 
-    user.balance += 200;
+    user.balance += 500;
     user.lastClaimed = now.toDate();
     await this.userRepo.save(user);
     return { success: 'Klaim berhasil!', balance: user.balance };
@@ -251,16 +251,25 @@ export class UserService {
     if (!user) {
       user = this.userRepo.create({
         telegramId,
-        balance: 100,
+        balance: 1000,
         wallet: `TEMP_${telegramId}`,
         referralCode: `REF-${telegramId}`,
         lastWithdraw: null,
         lastClaimed: null,
         referrerId: referrerId || '',
-        hasUsedReferral: referrerId ? true : false, // langsung set jika ada referrer
+        hasUsedReferral: referrerId ? true : false,
       });
 
       await this.userRepo.save(user);
+
+      try {
+        await this.sendMessageToTelegram(
+          telegramId,
+          '🎉 Selamat! Anda telah berhasil terdaftar dan mendapatkan 1000 poin sebagai saldo awal. Mulai kumpulkan lebih banyak poin sekarang!',
+        );
+      } catch (error) {
+        console.error('Gagal mengirim pesan pendaftaran ke Telegram:', error);
+      }
 
       if (referrerId) {
         await this.processReferral(referrerId);
