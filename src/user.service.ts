@@ -39,18 +39,20 @@ export class UserService {
 
   constructor(@InjectRepository(User) private userRepo: Repository<User>) {}
 
-  async tap(telegramId: string) {
+  async tap(telegramId: string, tapCount: number = 1) {
     let user = await this.userRepo.findOne({ where: { telegramId } });
     if (!user) return null;
 
     user = this.updateUserEnergy(user);
 
-    if (user.energy <= 0) {
-      return { error: 'Energi habis! Tunggu hingga energi terisi kembali.' };
+    if (user.energy < tapCount) {
+      return {
+        error: 'Energi tidak cukup! Tunggu hingga energi terisi kembali.',
+      };
     }
 
-    user.balance += 1;
-    user.energy -= 1;
+    user.balance += tapCount; // Tambah poin sesuai jumlah tap
+    user.energy -= tapCount; // Kurangi energi sesuai jumlah tap
     await this.userRepo.save(user);
 
     return {
