@@ -295,13 +295,13 @@ export class UserService {
       return;
     }
 
-    referrer.balance += 500;
+    referrer.balance += 2000;
     await this.userRepo.save(referrer);
 
     try {
       await this.sendMessageToTelegram(
         referrer.telegramId,
-        '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 500 poin.',
+        '🎉 Pengguna baru telah bergabung melalui referral Anda! Saldo Anda bertambah 2000 poin.',
       );
     } catch (error) {
       console.error('Gagal mengirim pesan ke Telegram:', error);
