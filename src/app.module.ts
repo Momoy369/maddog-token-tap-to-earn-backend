@@ -13,6 +13,7 @@ import { User } from './user.entity';
       entities: [User],
       autoLoadEntities: true,
       synchronize: true,
+      logging: true,
     }),
     UserModule,
   ],
