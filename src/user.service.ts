@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,6 +23,13 @@ dotenv.config();
 
 @Injectable()
 export class UserService {
+  async getEnergy(telegramId: string) {
+    const user = await this.userRepo.findOne({ where: { telegramId } });
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan');
+    }
+    return { energy: user.energy };
+  }
   private SPL_TOKEN_MINT_ADDRESS =
     'mntv2Hgsa3D8KhjPmQbCTefph17cJMuW4ZT1cGFg5FH';
 

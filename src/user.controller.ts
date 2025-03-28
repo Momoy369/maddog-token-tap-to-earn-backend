@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 
 @Controller('user')
@@ -31,5 +31,10 @@ export class UserController {
   @Get('leaderboard')
   async leaderboard() {
     return await this.userService.getLeaderboard();
+  }
+
+  @Get('energy')
+  async getEnergy(@Query('telegramId') telegramId: string) {
+    return await this.userService.getEnergy(telegramId);
   }
 }
